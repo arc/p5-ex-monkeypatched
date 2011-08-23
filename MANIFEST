@@ -2,3 +2,10 @@ Makefile.PL
 MANIFEST
 lib/ex/monkeypatched.pm
 t/0_compile.t
+t/basic.t
+t/lib/Monkey/A.pm
+t/lib/Monkey/B.pm
+t/lib/Monkey/C.pm
+t/lib/Monkey/PatchA.pm
+t/lib/Monkey/PatchB.pm
+t/lib/Monkey/PatchC.pm

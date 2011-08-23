@@ -3,19 +3,23 @@ use ExtUtils::MakeMaker;
 
 my $file = 'lib/ex/monkeypatched.pm';
 my %data = (
-    NAME               => 'ex::monkeypatched',
-    LICENSE            => 'perl',
-    MIN_PERL_VERSION   => '5.008',
-    META_MERGE         => {
-        resources      => {
-            repository => 'https://github.com/arc/p5-ex-monkeypatched',
+    NAME                  => 'ex::monkeypatched',
+    LICENSE               => 'perl',
+    MIN_PERL_VERSION      => '5.008',
+    META_MERGE            => {
+        resources         => {
+            repository    => 'https://github.com/arc/p5-ex-monkeypatched',
         },
     },
-    VERSION_FROM       => $file,
-    ABSTRACT_FROM      => $file,
-    AUTHOR             => 'Aaron Crane <arc@cpan.org>',
-    BUILD_REQUIRES     => {
-        'Test::More'   => '0.88',
+    VERSION_FROM          => $file,
+    ABSTRACT_FROM         => $file,
+    AUTHOR                => 'Aaron Crane <arc@cpan.org>',
+    BUILD_REQUIRES        => {
+        'Test::More'      => '0.88',
+        'Test::Exception' => 0,
+    },
+    PREREQ_PM             => {
+        'Sub::Name'       => 0,
     },
 );
 
