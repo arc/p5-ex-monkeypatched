@@ -1,0 +1,4 @@
+Makefile.PL
+MANIFEST
+lib/ex/monkeypatched.pm
+t/0_compile.t
