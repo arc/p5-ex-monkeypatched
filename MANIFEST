@@ -3,6 +3,7 @@ MANIFEST
 lib/ex/monkeypatched.pm
 t/0_compile.t
 t/basic.t
+t/inject.t
 t/lib/Monkey/A.pm
 t/lib/Monkey/B.pm
 t/lib/Monkey/C.pm

@@ -9,8 +9,16 @@ use Carp qw<croak>;
 our $VERSION = '0.01';
 
 sub import {
+    my $invocant = shift;
+    if (@_) {
+        my ($target, %routines) = @_;
+        eval "CORE::require $target; 1" or die $@;
+        $invocant->inject($target => %routines);
+    }
+}
+
+sub inject {
     my ($invocant, $target, %routines) = @_;
-    eval "CORE::require $target; 1" or die $@;
     while (my ($name, $code) = each %routines) {
         croak qq[Can't monkey-patch: $target already has a method "$name"]
             if $target->can($name);
@@ -79,6 +87,20 @@ should supply the name of a class to patch, and a hash from method names to
 code references implementing those methods.  The class to be patched will be
 loaded automatically before any patching is done (thus ensuring that all its
 base classes are also loaded).
+
+Alternatively, you can inject methods after a class has already been loaded,
+using the C<inject> method:
+
+    use ex::monkeypatched;
+
+    ex::monkeypatched->inject('Third::Party::Class' => (
+        clunk => sub { ... },
+        eth   => sub { ... },
+    );
+
+Calling C<inject> like this does not load the class in question, so
+C<ex::monkeypatched> is unable to guarantee that all the target class's
+methods have been loaded at the point the new methods are injected.
 
 The C<ex::> prefix on the name of this module indicates that its API is
 still considered experimental.  However, the underlying code has been in use
