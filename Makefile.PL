@@ -27,6 +27,8 @@ for ($ExtUtils::MakeMaker::VERSION) {
     delete $data{MIN_PERL_VERSION} if $_ < 6.48;
     delete $data{META_MERGE}       if $_ < 6.46;
     delete $data{LICENSE}          if $_ < 6.31;
+    $data{PREREQ_PM} = { %{ $data{PREREQ_PM} }, %{ delete $data{BUILD_REQUIRES} } }
+                                   if $_ < 6.5503;
 }
 
 WriteMakefile(%data);
