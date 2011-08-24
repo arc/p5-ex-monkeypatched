@@ -34,6 +34,10 @@ use Test::Exception;
         'Correctly refuse to override an inherited method';
 }
 
+throws_ok { ex::monkeypatched->import($_) } qr/^Invalid class name "\Q$_\E"/,
+    'Correctly refuse to load invalid class name "$_"'
+    for '', ' ', '!!', '2d6';
+
 done_testing();
 
 sub no_class_ok {
