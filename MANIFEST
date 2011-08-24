@@ -7,6 +7,8 @@ t/inject.t
 t/lib/Monkey/A.pm
 t/lib/Monkey/B.pm
 t/lib/Monkey/C.pm
+t/lib/Monkey/False.pm
+t/lib/Monkey/Invalid.pm
 t/lib/Monkey/PatchA.pm
 t/lib/Monkey/PatchB.pm
 t/lib/Monkey/PatchC.pm
