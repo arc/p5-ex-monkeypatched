@@ -42,10 +42,6 @@ throws_ok { ex::monkeypatched->import('Monkey::Invalid', f => sub {}) }
     qr{^syntax error at .*Monkey/Invalid\.pm line },
     'Exception propagated from require for invalid module';
 
-throws_ok { ex::monkeypatched->import($_) } qr/^Invalid class name "\Q$_\E"/,
-    'Correctly refuse to load invalid class name "$_"'
-    for '', ' ', '!!', '2d6';
-
 done_testing();
 
 sub no_class_ok {

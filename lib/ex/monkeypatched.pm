@@ -12,9 +12,8 @@ sub import {
     my $invocant = shift;
     if (@_) {
         my ($target, %routines) = @_;
-        croak qq[Invalid class name "$target"]
-            if $target !~ /\A (?!\d) \w+ (?: :: \w+ )* \z/xms;
-        eval "CORE::require $target; 1" or die $@;
+        (my $as_file = $target) =~ s{::|'}{/}g;
+        require "$as_file.pm";  # dies if no such file is found
         $invocant->inject($target => %routines);
     }
 }
