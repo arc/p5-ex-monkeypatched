@@ -10,10 +10,13 @@ our $VERSION = '0.01';
 
 sub import {
     my $invocant = shift;
+    my $norequire = @_ && $_[0] && $_[0] eq '-norequire' && shift;
     if (@_) {
         my ($target, %routines) = @_;
-        (my $as_file = $target) =~ s{::|'}{/}g;
-        require "$as_file.pm";  # dies if no such file is found
+        if (!$norequire) {
+            (my $as_file = $target) =~ s{::|'}{/}g;
+            require "$as_file.pm";  # dies if no such file is found
+        }
         $invocant->inject($target => %routines);
     }
 }
@@ -47,6 +50,12 @@ ex::monkeypatched - Experimental API for safe monkey-patching
     use ex::monkeypatched 'Third::Party::Class' => (
         clunk => sub { ... },
         eth   => sub { ... },
+    );
+
+    use Foo::TopLevel; # provides Foo::Bar, which isn't a module
+    use ex::monkeypatched -norequire => 'Foo::Bar' => (
+        thwapp => sub { ... },
+        urkk   => sub { ... },
     );
 
 =head1 BACKGROUND
@@ -85,23 +94,36 @@ details.
 
 C<ex::monkeypatched> injects methods when you C<use> it.  Your C<use> call
 should supply the name of a class to patch, and a hash from method names to
-code references implementing those methods.  The class to be patched will be
-loaded automatically before any patching is done (thus ensuring that all its
-base classes are also loaded).
+code references implementing those methods.
+
+The class to be patched will normally be loaded automatically before any
+patching is done (thus ensuring that all its base classes are also loaded).
+
+That doesn't work when you're trying to modify a class which can't be loaded
+directly; for example, the L<XML::LibXML> CPAN distribution provides a class
+named C<XML::LibXML::Node>, but trying to C<use XML::LibXML::Node> fails.
+In that situation, you can tell C<ex::monkeypatched> not to load the
+original class:
+
+    use ex::monkeypatched -norequire => 'XML::LibXML::Node' => (
+        clunk => sub { ... },
+        eth   => sub { ... },
+    );
 
 Alternatively, you can inject methods after a class has already been loaded,
 using the C<inject> method:
 
     use ex::monkeypatched;
 
-    ex::monkeypatched->inject('Third::Party::Class' => (
+    ex::monkeypatched->inject('XML::LibXML::Node' => (
         clunk => sub { ... },
         eth   => sub { ... },
     );
 
-Calling C<inject> like this does not load the class in question, so
-C<ex::monkeypatched> is unable to guarantee that all the target class's
-methods have been loaded at the point the new methods are injected.
+Neither of these approaches (C<-norequire> and C<inject>) loads the class in
+question, so when you use them, C<ex::monkeypatched> is unable to guarantee
+that all the target class's methods have been loaded at the point the new
+methods are injected.
 
 The C<ex::> prefix on the name of this module indicates that its API is
 still considered experimental.  However, the underlying code has been in use

@@ -34,6 +34,18 @@ use Test::Exception;
         'Correctly refuse to override an inherited method';
 }
 
+{
+    no_class_ok('Monkey::D');
+    require_ok('Monkey::PatchD');
+    can_ok('Monkey::D', qw<monkey_d>);
+    throws_ok { 'Monkey::D'->new }
+        qr/^Can't locate object method "new" via package "Monkey::D"/,
+        '-norequire option does not load target package';
+    require_ok('Monkey::D');
+    my $obj = new_ok('Monkey::D', [], 'monkey-patched version');
+    can_ok($obj, qw<meth_d monkey_d>);
+}
+
 throws_ok { ex::monkeypatched->import('Monkey::False', f => sub {}) }
     qr{^Monkey/False\.pm did not return a true value},
     'Exception propagated from require for false module';
