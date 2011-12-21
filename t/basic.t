@@ -54,6 +54,10 @@ throws_ok { ex::monkeypatched->import('Monkey::Invalid', f => sub {}) }
     qr{^syntax error at .*Monkey/Invalid\.pm line },
     'Exception propagated from require for invalid module';
 
+throws_ok { eval q{use ex::monkeypatched 'Monkey::Q1', 'meth'; 1} or die $@ }
+    qr{^Usage: use ex::monkeypatched \$class => %methods},
+    'Argument validation: missing method body';
+
 done_testing();
 
 sub no_class_ok {

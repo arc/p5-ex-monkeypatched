@@ -12,19 +12,35 @@ sub import {
     my $invocant = shift;
     my $norequire = @_ && $_[0] && $_[0] eq '-norequire' && shift;
     if (@_) {
-        if (!$norequire) {
-            (my $as_file = $_[0]) =~ s{::|'}{/}g;
-            require "$as_file.pm";  # dies if no such file is found
+        my @injections = _parse_injections(@_)
+            or croak "Usage: use $invocant \$class => %methods";
+        for (@injections) {
+            my ($target, $name, $code) = @$_;
+            if (!$norequire) {
+                (my $as_file = $target) =~ s{::|'}{/}g;
+                require "$as_file.pm";  # dies if no such file is found
+            }
+            _inject_method($target, $name, $code);
         }
-        $invocant->inject(@_);
     }
 }
 
-sub inject {
-    my ($invocant, $target, %routines) = @_;
-    while (my ($name, $code) = each %routines) {
-        _inject_method($target, $name, $code);
+sub _parse_injections {
+    if (@_ % 2) {
+        my @injections;
+        my $target = shift;
+        push @injections, [$target, splice @_, 0, 2]
+            while @_;
+        return @injections;
     }
+    return;
+}
+
+sub inject {
+    my $invocant = shift;
+    my @injections = _parse_injections(@_)
+        or croak "Usage: $invocant->inject(\$class, %methods)";
+    _inject_method(@$_) for @injections;
 }
 
 sub _inject_method {
