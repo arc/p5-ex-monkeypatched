@@ -12,27 +12,26 @@ sub import {
     my $invocant = shift;
     my $norequire = @_ && $_[0] && $_[0] eq '-norequire' && shift;
     if (@_) {
-        my ($target, %routines) = @_;
         if (!$norequire) {
-            (my $as_file = $target) =~ s{::|'}{/}g;
+            (my $as_file = $_[0]) =~ s{::|'}{/}g;
             require "$as_file.pm";  # dies if no such file is found
         }
-        $invocant->inject($target => %routines);
+        $invocant->inject(@_);
     }
 }
 
 sub inject {
     my ($invocant, $target, %routines) = @_;
     while (my ($name, $code) = each %routines) {
-        croak qq[Can't monkey-patch: $target already has a method "$name"]
-            if $target->can($name);
-        _install_subroutine($target, $name, $code);
+        _inject_method($target, $name, $code);
     }
 }
 
-sub _install_subroutine {
-    my ($package, $name, $code) = @_;
-    my $full_name = "$package\::$name";
+sub _inject_method {
+    my ($target, $name, $code) = @_;
+    croak qq[Can't monkey-patch: $target already has a method "$name"]
+        if $target->can($name);
+    my $full_name = "$target\::$name";
     my $renamed_code = subname($full_name, $code);
     no strict qw<refs>;
     *$full_name = $renamed_code;
