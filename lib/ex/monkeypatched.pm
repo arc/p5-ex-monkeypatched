@@ -14,14 +14,16 @@ sub import {
     if (@_) {
         my @injections = _parse_injections(@_)
             or croak "Usage: use $invocant \$class => %methods";
-        for (@injections) {
-            my ($target, $name, $code) = @$_;
-            if (!$norequire) {
-                (my $as_file = $target) =~ s{::|'}{/}g;
-                require "$as_file.pm";  # dies if no such file is found
-            }
-            _inject_method($target, $name, $code);
-        }
+        _require(map { $_->[0] } @injections)
+            if !$norequire;
+        _inject_methods(@injections);
+    }
+}
+
+sub _require {
+    for (@_) {
+        (my $as_file = $_) =~ s{::|'}{/}g;
+        require "$as_file.pm";  # dies if no such file is found
     }
 }
 
@@ -40,13 +42,20 @@ sub inject {
     my $invocant = shift;
     my @injections = _parse_injections(@_)
         or croak "Usage: $invocant->inject(\$class, %methods)";
-    _inject_method(@$_) for @injections;
+    _inject_methods(@injections);
 }
 
-sub _inject_method {
+sub _inject_methods {
+    for (@_) {
+        my ($target, $name, undef) = @$_;
+        croak qq[Can't monkey-patch: $target already has a method "$name"]
+            if $target->can($name);
+    }
+    _install_subroutine(@$_) for @_;
+}
+
+sub _install_subroutine {
     my ($target, $name, $code) = @_;
-    croak qq[Can't monkey-patch: $target already has a method "$name"]
-        if $target->can($name);
     my $full_name = "$target\::$name";
     my $renamed_code = subname($full_name, $code);
     no strict qw<refs>;
