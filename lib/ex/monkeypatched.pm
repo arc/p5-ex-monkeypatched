@@ -13,7 +13,9 @@ sub import {
     my $norequire = @_ && $_[0] && $_[0] eq '-norequire' && shift;
     if (@_) {
         my @injections = _parse_injections(@_)
-            or croak "Usage: use $invocant \$class => %methods";
+            or croak "Usage: use $invocant \$class => %methods
+or:    use $invocant (class => \$class, methods => \\%methods)
+or:    use $invocant (method => \$name, implementations => \\%impl)";
         _require(map { $_->[0] } @injections)
             if !$norequire;
         _inject_methods(@injections);
@@ -28,20 +30,35 @@ sub _require {
 }
 
 sub _parse_injections {
-    if (@_ % 2) {
+
+    if (@_ == 1 && ref $_[0] eq 'HASH') {
+        my $opt = shift;
+        if (defined $opt->{class} && ref $opt->{methods} eq 'HASH') {
+            return map { [$opt->{class}, $_, $opt->{methods}{$_}] }
+                keys %{ $opt->{methods} };
+        }
+        elsif (defined $opt->{method} && ref $opt->{implementations} eq 'HASH') {
+            return map { [$_, $opt->{method}, $opt->{implementations}{$_}] }
+                keys %{ $opt->{implementations} };
+        }
+    }
+    elsif (@_ % 2) {
         my @injections;
         my $target = shift;
         push @injections, [$target, splice @_, 0, 2]
             while @_;
         return @injections;
     }
+
     return;
 }
 
 sub inject {
     my $invocant = shift;
     my @injections = _parse_injections(@_)
-        or croak "Usage: $invocant->inject(\$class, %methods)";
+        or croak "Usage: $invocant->inject(\$class, %methods)
+or:    $invocant->inject({ class => \$class, methods => \\%methods })
+or:    $invocant->inject({ method => \$name, implementations => \\%impl })";
     _inject_methods(@injections);
 }
 
@@ -116,12 +133,42 @@ details.
 
 =head1 DESCRIPTION
 
-C<ex::monkeypatched> injects methods when you C<use> it.  Your C<use> call
-should supply the name of a class to patch, and a hash from method names to
-code references implementing those methods.
+C<ex::monkeypatched> injects methods when you C<use> it.  There are two ways
+to invoke it with C<use>: one is easy but inflexible, and the other is more
+flexible but also more awkward.
 
-The class to be patched will normally be loaded automatically before any
-patching is done (thus ensuring that all its base classes are also loaded).
+In the easy form, your C<use> call should supply the name of a class to
+patch, and a listified hash from method names to code references
+implementing those methods:
+
+    use ex::monkeypatched 'Some::Class' => (
+        m1 => sub { ... },  # $x->m1 on Some::Class will now run this
+        m2 => sub { ... },  # $x->m2 on Some::Class will now run this
+    );
+
+In the flexible form, your C<use> call supplies a single hashref saying what
+methods to create.  That last example can be done exactly like this:
+
+    use ex::monkeypatched { class => 'Some::Class', methods => {
+        m1 => sub { ... },  # $x->m1 on Some::Class will now run this
+        m2 => sub { ... },  # $x->m2 on Some::Class will now run this
+    } };
+
+However, this flexible form also lets you add a method of a single name to
+several classes at once:
+
+    use ex::monkeypatched { method => 'm3', implementations => {
+        'Some::BaseClass'     => sub { ... },
+        'Some::Subclass::One' => sub { ... }
+        'Some::Subclass::Two' => sub { ... },
+    } };
+
+This is helpful when you want to provide a method for several related
+classes, with a different implementation in each of them.
+
+The classes to be patched will normally be loaded automatically before any
+patching is done (thus ensuring that all their base classes are also
+loaded).
 
 That doesn't work when you're trying to modify a class which can't be loaded
 directly; for example, the L<XML::LibXML> CPAN distribution provides a class
@@ -134,6 +181,15 @@ original class:
         eth   => sub { ... },
     );
 
+    # Equivalently:
+    use ex::monkeypatched -norequire => {
+        class   => 'XML::LibXML::Node',
+        methods => {
+            clunk => sub { ... },
+            eth   => sub { ... },
+        },
+    };
+
 Alternatively, you can inject methods after a class has already been loaded,
 using the C<inject> method:
 
@@ -143,6 +199,12 @@ using the C<inject> method:
         clunk => sub { ... },
         eth   => sub { ... },
     );
+
+    # Equivalently:
+    ex::monkeypatched->inject({ class => 'XML::LibXML::Node', methods => {
+        clunk => sub { ... },
+        eth   => sub { ... },
+    }});
 
 Neither of these approaches (C<-norequire> and C<inject>) loads the class in
 question, so when you use them, C<ex::monkeypatched> is unable to guarantee

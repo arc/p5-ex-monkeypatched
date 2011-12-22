@@ -46,6 +46,40 @@ use Test::Exception;
     can_ok($obj, qw<meth_d monkey_d>);
 }
 
+{
+    no_class_ok($_) for qw<Monkey::Sys Monkey::Sys::A Monkey::Sys::B Monkey::Sys::C>;
+    require_ok('Monkey::Sys');
+    can_ok('Monkey::Sys::A', 'sys_a_1');
+    lives_ok {
+        eval q{
+            use ex::monkeypatched -norequire => { method => 'foo', implementations => {
+                'Monkey::Sys::A' => sub { 'in Monkey::Sys::A foo' },
+                'Monkey::Sys::B' => sub { 'in Monkey::Sys::B foo' },
+            } };
+            1
+        } or die $@;
+    } 'name+implementations lives';
+    my $obj = new_ok('Monkey::Sys::B', [], 'monkey-patched version');
+    can_ok($obj, 'foo')
+        and is($obj->foo, 'in Monkey::Sys::B foo', 'name+implementations gets right method');
+}
+
+{
+    can_ok('Monkey::Sys::C', 'sys_c_1');
+    lives_ok {
+        eval q{
+            use ex::monkeypatched -norequire => { class => 'Monkey::Sys::C', methods => {
+                foo => sub { 'in Monkey::Sys::C foo' },
+                bar => sub { 'in Monkey::Sys::C bar' },
+            } };
+            1
+        } or die $@;
+    } 'class+methods lives';
+    my $obj = new_ok('Monkey::Sys::C', [], 'monkey-patched version');
+    can_ok($obj, 'foo')
+        and is($obj->foo, 'in Monkey::Sys::C foo', 'class+methods gets right method');
+}
+
 throws_ok { ex::monkeypatched->import('Monkey::False', f => sub {}) }
     qr{^Monkey/False\.pm did not return a true value},
     'Exception propagated from require for false module';
